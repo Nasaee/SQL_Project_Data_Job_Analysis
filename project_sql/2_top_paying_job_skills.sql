@@ -5,7 +5,31 @@ Question: What skills are required for the top-paying data analyst jobs?
 - Why? It provides a detailed look at which high-paying jobs demand certain skills, 
     helping job seekers understand which skills to develop that align with top salaries
 */
-
+WITH top_data_analyst_jobs AS (
+    SELECT 
+        jp.job_id,
+        cd.name AS company_name,
+        jp.job_title,
+        jp.job_location,
+        jp.job_schedule_type,
+        jp.salary_year_avg,
+        jp.job_posted_date
+    FROM job_postings_fact AS jp
+    LEFT JOIN company_dim AS cd 
+        ON jp.company_id = cd.company_id
+    WHERE jp.job_title_short = 'Data Analyst'
+      AND jp.job_location = 'Anywhere'
+      AND jp.salary_year_avg IS NOT NULL
+    ORDER BY jp.salary_year_avg DESC
+    LIMIT 10
+)
+SELECT 
+	    td.*,
+        sd.skills
+FROM skills_job_dim sjd 
+INNER JOIN top_data_analyst_jobs AS td ON td.job_id = sjd.job_id
+INNER JOIN skills_dim AS sd ON sd.skill_id = sjd.skill_id
+ORDER BY td.salary_year_avg DESC;
 /*
 Here's the breakdown of the most demanded skills for data analysts in 2023, based on job postings:
 SQL is leading with a bold count of 8.
