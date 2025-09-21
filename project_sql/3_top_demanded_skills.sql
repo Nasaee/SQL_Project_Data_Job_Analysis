@@ -7,6 +7,17 @@ Question: What are the most in-demand skills for data analysts?
     providing insights into the most valuable skills for job seekers.
 */
 
+SELECT 
+sd.skills,
+COUNT(sjd.skill_id ) AS demand_count
+FROM job_postings_fact jpf 
+INNER JOIN skills_job_dim sjd ON jpf.job_id = sjd.job_id
+INNER JOIN skills_dim sd ON sjd.skill_id = sd.skill_id
+WHERE jpf.job_title_short = 'Data Analyst'
+--WHERE jpf.job_title_short ILIKE 'Data Analyst'
+GROUP BY sd.skills
+ORDER BY demand_count DESC
+LIMIT 5
 
 /*
 Here's the breakdown of the most demanded skills for data analysts in 2023
