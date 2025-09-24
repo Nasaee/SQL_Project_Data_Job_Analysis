@@ -6,6 +6,61 @@ Answer: What are the most optimal skills to learn (aka it’s in high demand and
     offering strategic insights for career development in data analysis
 */
 
+-- 🔎 หา skills ที่มีทั้ง demand (จำนวนงานที่ต้องการ) และค่าเฉลี่ยเงินเดือนสูง
+-- เงื่อนไข: เฉพาะงาน Data Analyst / remote / มีการระบุเงินเดือนเท่านั้น
+
+WITH skills_demand AS (
+  -- CTE แรก: นับจำนวนงาน (demand) ต่อ skill
+  SELECT 
+    sd.skill_id,
+    sd.skills,
+    COUNT(sjd.job_id) AS demand_count
+  FROM job_postings_fact AS jpf
+  INNER JOIN skills_job_dim AS sjd 
+    ON jpf.job_id = sjd.job_id
+  INNER JOIN skills_dim AS sd 
+    ON sjd.skill_id = sd.skill_id
+  WHERE 
+    jpf.job_title_short = 'Data Analyst'   -- เฉพาะตำแหน่ง Data Analyst
+    AND jpf.salary_year_avg IS NOT NULL    -- ต้องมีเงินเดือนระบุ
+    AND jpf.job_work_from_home = TRUE      -- เฉพาะ remote jobs
+  GROUP BY sd.skill_id, sd.skills
+),
+
+average_salary AS (
+  -- CTE สอง: หาเงินเดือนเฉลี่ยของแต่ละ skill
+  SELECT 
+    sd.skill_id,
+    sd.skills,
+    ROUND(AVG(jpf.salary_year_avg), 0) AS avg_salary
+  FROM job_postings_fact AS jpf
+  INNER JOIN skills_job_dim AS sjd 
+    ON jpf.job_id = sjd.job_id  
+  INNER JOIN skills_dim AS sd 
+    ON sjd.skill_id = sd.skill_id
+  WHERE 
+    jpf.job_title_short = 'Data Analyst'
+    AND jpf.salary_year_avg IS NOT NULL
+    AND jpf.job_work_from_home = TRUE
+  GROUP BY sd.skill_id, sd.skills
+)
+
+-- Join สอง CTE เข้าด้วยกัน
+SELECT 
+  d.skill_id,
+  d.skills,
+  d.demand_count,   -- จำนวนงานที่ต้องการสกิลนี้
+  a.avg_salary      -- ค่าเฉลี่ยเงินเดือน
+FROM skills_demand d
+JOIN average_salary a 
+  ON d.skill_id = a.skill_id
+WHERE d.demand_count > 10   -- filter: เอาเฉพาะสกิลที่มี demand มากกว่า 10
+ORDER BY 
+  a.avg_salary DESC,        -- เรียงลำดับก่อนตามเงินเดือนเฉลี่ย
+  d.demand_count DESC       -- แล้วค่อยตามจำนวน demand
+LIMIT 25;                 
+
+
 /*
 Here's a breakdown of the most optimal skills for Data Analysts in 2023: 
 High-Demand Programming Languages: Python and R stand out for their high demand, with demand counts of 236 and 148 respectively. Despite their high demand, their average salaries are around $101,397 for Python and $100,499 for R, indicating that proficiency in these languages is highly valued but also widely available.
